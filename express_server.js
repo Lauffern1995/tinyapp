@@ -1,9 +1,11 @@
 const express = require("express");
-const app = express();
 const PORT = 8080; // default port 8080
-app.set("view engine", "ejs");
 const bodyParser = require("body-parser");
+const cookieParser = require('cookie-parser')
+const app = express();
+app.use(cookieParser())
 app.use(bodyParser.urlencoded({extended: true}));
+app.set("view engine", "ejs");
 
 const urlDatabase = {
   "b2xVn2": "http://www.lighthouselabs.ca",
@@ -12,18 +14,19 @@ const urlDatabase = {
 
 //Index Page
 app.get("/urls", (req, res) => {
-  const templateVars = { urls: urlDatabase };
+  const templateVars = { urls: urlDatabase, username: req.cookies.username};
   res.render("urls_index", templateVars);
 });
 
 //Create new shortURL page
 app.get("/urls/new", (req, res) => {
-  res.render("urls_new");
+  const templateVars = {  username: req.cookies.username};
+  res.render("urls_new", templateVars);
 });
 
 //Newly Generated display shortURL page
 app.get("/urls/:shortURL", (req, res) => {
-  const templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] }; // making sure to set longURL as a value to key of shortURL
+  const templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL], username: req.cookies.username  }; // making sure to set longURL as a value to key of shortURL
   res.render("urls_show", templateVars); // showing HTML from urls_show with populated longURL from the form
 });
 
@@ -42,7 +45,7 @@ app.post("/urls", (req, res) => {
   
 });
 
-//Delete Row
+//Delete Row 
 app.post("/urls/:shortURL/delete", (req, res) => {
   let shortURL = req.params.shortURL;
   delete urlDatabase[shortURL];
@@ -62,6 +65,13 @@ app.post("/urls/:shortURL/edit", (req, res) => {
   let shortURL = req.params.shortURL;
   urlDatabase[shortURL] = req.body.longURL
   res.redirect(`/urls`);
+});
+
+//Setting Username Cookies
+app.post("/login", (req, res) => {
+  const username = req.body.username
+  res.cookie('username', username); 
+  res.redirect('/urls')
 });
 
 app.listen(PORT, () => {
