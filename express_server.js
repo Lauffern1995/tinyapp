@@ -24,6 +24,7 @@ app.get("/urls/register", (req, res) => {
   res.render(`urls_register`, templateVars);
 });
 
+//Login
 app.get("/urls/login", (req, res) => {
   const templateVars = {  user: users[req.cookies.user_id] };
   
@@ -32,6 +33,10 @@ app.get("/urls/login", (req, res) => {
 
 //Create new shortURL page
 app.get("/urls/new", (req, res) => {
+  if (!users[req.cookies.user_id]) {
+    res.status(400)
+    .send('Please Log In!');
+  }
   const templateVars = {  user: users[req.cookies.user_id] }; //declaring cookie for each instance of a new page render
   res.render("urls_new", templateVars);
 });
@@ -55,7 +60,17 @@ app.get("/urls/:shortURL/edit", (req, res) => {
 });
 
 
+////////////////////POSTS//////////////////////////
+
+
+// Main Page 
 app.post("/urls", (req, res) => {
+
+  if (!req.cookies.user_id) {
+    res.status(401)
+    .send('Please Log In!');
+    return;
+  }
   let shortURL = generateRandomString();
   let longURL = req.body.longURL;
   urlDatabase[shortURL] = longURL;
@@ -76,12 +91,12 @@ app.post("/logout", (req, res) => {
   res.redirect('/urls');
 });
 
-
+//Register page 
 app.post("/urls/register", (req, res) => {
   
   if (emailFinder(req.body.email, users)) {
     res.status(400)
-    .send('Email has already been Registered');
+      .send('Email has already been Registered');
     
   } else {
     
@@ -94,7 +109,7 @@ app.post("/urls/register", (req, res) => {
     
     if (checkEmpty(password, email)) {
       res.status(400)
-      .send('Please enter a valid Email and Password');
+        .send('Please enter a valid Email and Password');
     }
     
     res.cookie('user_id', users[newUserId].id);
@@ -103,37 +118,41 @@ app.post("/urls/register", (req, res) => {
   
 });
 
+//Login page 
 app.post("/urls/login", (req, res) => {
 
   let password = req.body.password;
   let email = req.body.email;
-  let userObj = emailFinder(email, users)
-  console.log(users)
-  
-  if (userObj === false){
+  let userObj = emailFinder(email, users);
+ 
+  if (userObj === false) {
     res.status(403)
-    .send('Email Not Registered')
+      .send('Email Not Registered');
     return;
   }
 
   if (checkEmpty(password, email)) {
     res.status(400)
-    .send('Please enter a valid Email and Password');
+      .send('Please enter a valid Email and Password');
     return;
   }
 
   if (userObj.password === password) {
-    res.cookie('user_id', userObj.id)
-    res.redirect('/urls')
-   }
-
-   else {
+    res.cookie('user_id', userObj.id);
+    res.redirect('/urls');
+  } else {
     res.status(403)
-    .send('Incorrect Password')
+      .send('Incorrect Password');
     
-   }
+  }
 
 });
+
+
+
+
+
+
 
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
