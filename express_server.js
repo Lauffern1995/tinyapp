@@ -27,6 +27,11 @@ app.get("/urls/register", (req, res) => {
   res.render(`urls_register`, templateVars);
 });
 
+app.get("/urls/login", (req, res) => {
+  const templateVars = {  users_ID: req.cookies.users_ID };
+  
+  res.render(`urls_login`, templateVars);
+});
 
 //Create new shortURL page
 app.get("/urls/new", (req, res) => {
@@ -65,21 +70,6 @@ app.post("/urls", (req, res) => {
 app.post("/urls/:shortURL/delete", (req, res) => {
   let shortURL = req.params.shortURL;
   delete urlDatabase[shortURL];
-  res.redirect(`/urls`);
-});
-
-
-//Edit Row on Index 
-app.post("/urls/:shortURL/edit", (req, res) => {
-  let shortURL = req.params.shortURL;
-  urlDatabase[shortURL] = req.body.longURL;
-  res.redirect(`/urls`);
-});
-
-//Setting Username Cookies
-app.post("/login", (req, res) => {
-  const username = req.body.username;
-  res.cookie('username', username);
   res.redirect('/urls');
 });
 
@@ -91,16 +81,29 @@ app.post("/logout", (req, res) => {
 
 
 app.post("/urls/register", (req, res) => {
-  if(req.body.password === '' || req.body.email === '') {
-    res.send('<h1>400 Status Code</h1><p>Please Enter a valid email and password</p>')
-  };
+  
+  if (emailFinder(req.body.email, users, res)) {
+    res.status(400)
+    .send('Email has already been Registered');
+    
+  } else { 
+
   let newUserID = generateRandomString();
   let ID = newUserID;
   let password = req.body.password;
   let email = req.body.email;
-   users[newUserID] = { ID, email, password};
+  checkEmpty(password, email, res)
+  emailFinder(email, users, res)
+  users[newUserID] = { ID, email, password};
+  
+  if (checkEmpty(password, email, res)) {
+    res.status(400)
+    .send('Please enter a valid Email and Password');
+  }
+  
    res.cookie('users_ID', users[newUserID]);
    res.redirect('/urls');
+  }
 
 });
 
@@ -110,6 +113,8 @@ app.listen(PORT, () => {
 });
 
 
+///////////HELPER FUNCS///////////////
+
 const generateRandomString = function() {
 
   let shortURL = Math.random().toString(36).substring(2,8);
@@ -117,10 +122,22 @@ const generateRandomString = function() {
 
 };
 
-
-const checkEmpty = function (req){
-  if(req.body.password === '' || req.body.email === '') {
-    res.send('<h1>400 Status Code</h1><p>Please Enter a valid email and password</p>')
+const checkEmpty = function (pass, email, res){
+  if(!pass || !email) {
+   return true
   };
-}
+  return false
+};
+
+const emailFinder = function (email, users, res) {
+  for (let user in users) {
+    if (email === users[user].email) {
+      return true
+    }
+  }
+  return false;
+};
+
+
+
 
