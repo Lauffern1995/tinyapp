@@ -7,41 +7,38 @@ app.use(cookieParser());
 app.use(bodyParser.urlencoded({extended: true}));
 app.set("view engine", "ejs");
 
-const urlDatabase = {
-  "b2xVn2": "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com"
-};
+const urlDatabase = {};
 
-const users = {}
+const users = {};
 
 //Index Page
 app.get("/urls", (req, res) => {
-  const templateVars = { urls: urlDatabase, users_ID: req.cookies.users_ID};
+  const templateVars = { urls: urlDatabase, user: users[req.cookies.user_id]};
   res.render("urls_index", templateVars);// rendering urls with ejs from urls_index and passing in tempVars as arg
 });
 
 //Registration page
 app.get("/urls/register", (req, res) => {
-  const templateVars = {  users_ID: req.cookies.users_ID };
+  const templateVars = {  user: users[req.cookies.user_id] };
   
   res.render(`urls_register`, templateVars);
 });
 
 app.get("/urls/login", (req, res) => {
-  const templateVars = {  users_ID: req.cookies.users_ID };
+  const templateVars = {  user: users[req.cookies.user_id] };
   
   res.render(`urls_login`, templateVars);
 });
 
 //Create new shortURL page
 app.get("/urls/new", (req, res) => {
-  const templateVars = {  users_ID: req.cookies.users_ID }; //declaring cookie for each instance of a new page render
+  const templateVars = {  user: users[req.cookies.user_id] }; //declaring cookie for each instance of a new page render
   res.render("urls_new", templateVars);
 });
 
 //Newly Generated display shortURL page
 app.get("/urls/:shortURL", (req, res) => {
-  const templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL], users_ID: req.cookies.users_ID  }; // making sure to set longURL as a value to key of shortURL
+  const templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL], user: users[req.cookies.user_id]  }; // making sure to set longURL as a value to key of shortURL
   res.render("urls_show", templateVars); // showing HTML from urls_show with populated longURL from the form
 });
 
@@ -75,38 +72,68 @@ app.post("/urls/:shortURL/delete", (req, res) => {
 
 //setting LOGOUT to clear cookies
 app.post("/logout", (req, res) => {
-  res.clearCookie('users_ID');
+  res.clearCookie('user_id');
   res.redirect('/urls');
 });
 
 
 app.post("/urls/register", (req, res) => {
   
-  if (emailFinder(req.body.email, users, res)) {
+  if (emailFinder(req.body.email, users)) {
     res.status(400)
     .send('Email has already been Registered');
     
-  } else { 
-
-  let newUserID = generateRandomString();
-  let ID = newUserID;
-  let password = req.body.password;
-  let email = req.body.email;
-  checkEmpty(password, email, res)
-  emailFinder(email, users, res)
-  users[newUserID] = { ID, email, password};
+  } else {
+    
+    let newUserId = generateRandomString();
+    let id = newUserId;
+    let password = req.body.password;
+    let email = req.body.email;
   
-  if (checkEmpty(password, email, res)) {
-    res.status(400)
-    .send('Please enter a valid Email and Password');
+    users[newUserId] = { id, email, password};
+    
+    if (checkEmpty(password, email)) {
+      res.status(400)
+      .send('Please enter a valid Email and Password');
+    }
+    
+    res.cookie('user_id', users[newUserId].id);
+    res.redirect('/urls');
   }
   
-   res.cookie('users_ID', users[newUserID]);
-   res.redirect('/urls');
-  }
-
 });
 
+app.post("/urls/login", (req, res) => {
+
+  let password = req.body.password;
+  let email = req.body.email;
+  let userObj = emailFinder(email, users)
+  console.log(users)
+  
+  if (userObj === false){
+    res.status(403)
+    .send('Email Not Registered')
+    return;
+  }
+
+  if (checkEmpty(password, email)) {
+    res.status(400)
+    .send('Please enter a valid Email and Password');
+    return;
+  }
+
+  if (userObj.password === password) {
+    res.cookie('user_id', userObj.id)
+    res.redirect('/urls')
+   }
+
+   else {
+    res.status(403)
+    .send('Incorrect Password')
+    
+   }
+
+});
 
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
@@ -122,17 +149,17 @@ const generateRandomString = function() {
 
 };
 
-const checkEmpty = function (pass, email, res){
-  if(!pass || !email) {
-   return true
-  };
-  return false
+const checkEmpty = function(pass, email) {
+  if (!pass || !email) {
+    return true;
+  }
+  return false;
 };
 
-const emailFinder = function (email, users, res) {
+const emailFinder = function(email, users) {
   for (let user in users) {
     if (email === users[user].email) {
-      return true
+      return users[user];
     }
   }
   return false;

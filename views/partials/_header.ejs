@@ -13,10 +13,10 @@
         
       </div>
     </div>
-    <div class="">
-      <% if(users_ID) { %>
+    <div>
+      <% if(user) { %>
         <label for="logged-in">Logged In As: </label>
-        <h5><%=users_ID.email%><h5>
+        <h5><%=user.email%><h5>
           <form action="/logout" method="POST">
             <button type="submit" class="btn btn-primary">Logout</button>
           </form>
