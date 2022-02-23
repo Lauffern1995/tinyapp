@@ -12,42 +12,31 @@ const urlDatabase = {
   "9sm5xK": "http://www.google.com"
 };
 
-const users = { 
-  "userRandomID": {
-    id: "userRandomID", 
-    email: "user@example.com", 
-    password: "purple-monkey-dinosaur"
-  },
- "user2RandomID": {
-    id: "user2RandomID", 
-    email: "user2@example.com", 
-    password: "dishwasher-funk"
-  }
-}
+const users = {}
 
 //Index Page
 app.get("/urls", (req, res) => {
-  const templateVars = { urls: urlDatabase, username: req.cookies.username};
+  const templateVars = { urls: urlDatabase, users_ID: req.cookies.users_ID};
   res.render("urls_index", templateVars);// rendering urls with ejs from urls_index and passing in tempVars as arg
 });
 
 //Registration page
 app.get("/urls/register", (req, res) => {
-  const templateVars = {  username: req.cookies.username };
-
+  const templateVars = {  users_ID: req.cookies.users_ID };
+  
   res.render(`urls_register`, templateVars);
 });
 
 
 //Create new shortURL page
 app.get("/urls/new", (req, res) => {
-  const templateVars = {  username: req.cookies.username }; //declaring cookie for each instance of a new page render
+  const templateVars = {  users_ID: req.cookies.users_ID }; //declaring cookie for each instance of a new page render
   res.render("urls_new", templateVars);
 });
 
 //Newly Generated display shortURL page
 app.get("/urls/:shortURL", (req, res) => {
-  const templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL], username: req.cookies.username  }; // making sure to set longURL as a value to key of shortURL
+  const templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL], users_ID: req.cookies.users_ID  }; // making sure to set longURL as a value to key of shortURL
   res.render("urls_show", templateVars); // showing HTML from urls_show with populated longURL from the form
 });
 
@@ -96,19 +85,22 @@ app.post("/login", (req, res) => {
 
 //setting LOGOUT to clear cookies
 app.post("/logout", (req, res) => {
-  res.clearCookie('username');
+  res.clearCookie('users_ID');
   res.redirect('/urls');
 });
 
 
 app.post("/urls/register", (req, res) => {
+  if(req.body.password === '' || req.body.email === '') {
+    res.send('<h1>400 Status Code</h1><p>Please Enter a valid email and password</p>')
+  };
   let newUserID = generateRandomString();
-  let ID = newUserID 
-  let password = req.body.password
-  let email = req.body.email
-   users[newUserID] = { ID, email, password}
-   console.log(users)
-   res.cookie('username', username);
+  let ID = newUserID;
+  let password = req.body.password;
+  let email = req.body.email;
+   users[newUserID] = { ID, email, password};
+   res.cookie('users_ID', users[newUserID]);
+   res.redirect('/urls');
 
 });
 
@@ -124,4 +116,11 @@ const generateRandomString = function() {
   return shortURL;
 
 };
+
+
+const checkEmpty = function (req){
+  if(req.body.password === '' || req.body.email === '') {
+    res.send('<h1>400 Status Code</h1><p>Please Enter a valid email and password</p>')
+  };
+}
 
