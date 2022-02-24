@@ -1,3 +1,5 @@
+
+const { urlsForUser, emailFinder, checkEmpty, generateRandomString } = require('./helpers');
 const express = require("express");
 const PORT = 8080; // default port 8080
 const bodyParser = require("body-parser");
@@ -21,7 +23,7 @@ const users = {};
 
 //Index Page
 app.get("/urls", (req, res) => {
-  let userURl = urlsForUser(req.session.user_id);
+  let userURl = urlsForUser(req.session.user_id, urlDatabase);
   const templateVars = { urls: userURl, user: users[req.session.user_id]};
   res.render("urls_index", templateVars);// rendering urls with ejs from urls_index and passing in tempVars as arg
 
@@ -63,7 +65,7 @@ app.get("/urls/:shortURL", (req, res) => {
   }
 
   const shortURL = req.params.shortURL;
-  const filteredURLs = urlsForUser(req.session.user_id);
+  const filteredURLs = urlsForUser(req.session.user_id, urlDatabase);
 
   // if the short URL for the user (taken from :id) does not exist send error
   if (!filteredURLs[shortURL]) {
@@ -164,7 +166,7 @@ app.post("/urls/register", (req, res) => {
 app.post("/urls/login", (req, res) => {
 
   let password = req.body.password;
-  const hashedPassword = bcrypt.hashSync(password, 10);
+ 
   let email = req.body.email;
   let userObj = emailFinder(email, users);
  
@@ -179,8 +181,9 @@ app.post("/urls/login", (req, res) => {
       .send('Please enter a valid Email and Password');
     return;
   }
-
-  if (bcrypt.compareSync(req.body.password, hashedPassword)) {
+ 
+  
+  if (bcrypt.compareSync(password, userObj.hashedPassword)) {
     req.session.user_id = userObj.id;
     res.redirect('/urls');
     return;
@@ -206,41 +209,6 @@ app.listen(PORT, () => {
 });
 
 
-///////////HELPER FUNCS///////////////
-
-const generateRandomString = function() {
-
-  let shortURL = Math.random().toString(36).substring(2,8);
-  return shortURL;
-
-};
-
-const checkEmpty = function(pass, email) {
-  if (!pass || !email) {
-    return true;
-  }
-  return false;
-};
-
-const emailFinder = function(email, users) {
-  for (let user in users) {
-    if (email === users[user].email) {
-      return users[user];
-    }
-  }
-  return false;
-};
-
-const urlsForUser = function(userID) {
-  let newObj = {};
-  for (let url in urlDatabase) {
-    if (userID === urlDatabase[url].userID) {
-      newObj[url] = {longURL: urlDatabase[url].longURL,
-        userID: urlDatabase[url].userID};
-    }
-  }
-  return newObj;
-};
 
 
 
