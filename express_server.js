@@ -21,8 +21,18 @@ app.set("view engine", "ejs");
 const urlDatabase = {};
 const users = {};
 
+
+app.get("/", (req, res) => {
+  if (!req.session.user_id) {
+    return res.redirect("/login");
+  }
+  res.redirect("/urls");
+});
+
+
 //Index Page
 app.get("/urls", (req, res) => {
+
   let userURl = urlsForUser(req.session.user_id, urlDatabase);
   const templateVars = { urls: userURl, user: users[req.session.user_id]};
   res.render("urls_index", templateVars);// rendering urls with ejs from urls_index and passing in tempVars as arg
