@@ -35,7 +35,7 @@ app.get("/urls/login", (req, res) => {
 app.get("/urls/new", (req, res) => {
   if (!users[req.cookies.user_id]) {
     res.status(400)
-    .send('Please Log In!');
+      .send('Please Log In!');
   }
   const templateVars = {  user: users[req.cookies.user_id] }; //declaring cookie for each instance of a new page render
   res.render("urls_new", templateVars);
@@ -43,13 +43,18 @@ app.get("/urls/new", (req, res) => {
 
 //Newly Generated display shortURL page
 app.get("/urls/:shortURL", (req, res) => {
-  const templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL], user: users[req.cookies.user_id]  }; // making sure to set longURL as a value to key of shortURL
+  if (!urlDatabase[req.params.shortURL]) {
+    res.status(400)
+      .send('Cannot Find URL!');
+  }
+  console.log(urlDatabase);
+  const templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL].longURL, user: users[req.cookies.user_id]  }; // making sure to set longURL as a value to key of shortURL
   res.render("urls_show", templateVars); // showing HTML from urls_show with populated longURL from the form
 });
 
 //Hyperlink to re-direct client to original longURL landing-page
 app.get("/u/:shortURL", (req, res) => {
-  const longURL = urlDatabase[req.params.shortURL];
+  const longURL = urlDatabase[req.params.shortURL].longURL;
   res.redirect(longURL);
 });
 
@@ -60,20 +65,23 @@ app.get("/urls/:shortURL/edit", (req, res) => {
 });
 
 
-////////////////////POSTS//////////////////////////
+////////////////////POSTS//////////////////////
 
 
-// Main Page 
+// Main Page
 app.post("/urls", (req, res) => {
 
   if (!req.cookies.user_id) {
     res.status(401)
-    .send('Please Log In!');
+      .send('Please Log In!');
     return;
   }
   let shortURL = generateRandomString();
+  let userID = generateRandomString();
   let longURL = req.body.longURL;
-  urlDatabase[shortURL] = longURL;
+  urlDatabase[shortURL] = { longURL, userID };
+
+
   res.redirect(`/urls/${shortURL}`);
   
 });
@@ -91,7 +99,7 @@ app.post("/logout", (req, res) => {
   res.redirect('/urls');
 });
 
-//Register page 
+//Register page
 app.post("/urls/register", (req, res) => {
   
   if (emailFinder(req.body.email, users)) {
@@ -118,7 +126,7 @@ app.post("/urls/register", (req, res) => {
   
 });
 
-//Login page 
+//Login page
 app.post("/urls/login", (req, res) => {
 
   let password = req.body.password;
@@ -148,6 +156,13 @@ app.post("/urls/login", (req, res) => {
 
 });
 
+//Edit URLS button return
+app.post("/urls/:shortURL/edit", (req, res) => {
+  let shortURL = req.params.shortURL;
+  urlDatabase[req.params.shortURL].longURL = req.body.longURL;
+  res.redirect(`/urls`);
+
+});
 
 
 

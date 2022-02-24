@@ -12,7 +12,12 @@
   <header>
       
     <%- include('partials/_header') %>
-    
+    <% if(!user) { %>
+      <main style="margin: 2em;">
+      <h1>Welcome to Tiny App</h1>
+      <h3>Please Log-In or Register to Continue.</h3>
+    </main>
+      <% } else { %>
   </header>
   <main style="margin: 1em;">
     <h3>My URLs</h3>
@@ -31,12 +36,14 @@
         <% for(let url in urls) { %>
           <tr>
             <td><%= url %></td>
-            <td><%= urls[url] %></td>
+            <td><%= urls[url].longURL %></td>
             <td><form method="GET" action="/urls/<%=url%>/edit"><button type="submit" class="btn btn-outline-info">Edit</button></form></td>
             <td><form method="POST" action="/urls/<%=url%>/delete"><button type="submit" class="btn btn-outline-danger">Delete</button></form></td>
           </tr>
           <% } %>
         </tbody>
+        
+        <% } %>
         
       </table>
 
