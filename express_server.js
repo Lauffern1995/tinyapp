@@ -3,7 +3,10 @@ const PORT = 8080; // default port 8080
 const bodyParser = require("body-parser");
 const cookieParser = require('cookie-parser');
 const { clearCookie } = require("express/lib/response");
+const bcrypt = require('bcryptjs');
+const morgan = require('morgan')
 const app = express();
+app.use(morgan('tiny'))
 app.use(cookieParser());
 app.use(bodyParser.urlencoded({extended: true}));
 app.set("view engine", "ejs");
@@ -136,10 +139,11 @@ app.post("/urls/register", (req, res) => {
     
   let newUserId = generateRandomString();
   let id = newUserId;
-  let password = req.body.password;
   let email = req.body.email;
-  users[newUserId] = { id, email, password};
-    
+  let password = req.body.password;
+  const hashedPassword = bcrypt.hashSync(password, 10);
+  users[newUserId] = { id, email, hashedPassword};
+  console.log(users[newUserId])
   if (checkEmpty(password, email)) {
     res.status(400)
       .send('Please enter a valid Email and Password');
@@ -155,6 +159,7 @@ app.post("/urls/register", (req, res) => {
 app.post("/urls/login", (req, res) => {
 
   let password = req.body.password;
+  const hashedPassword = bcrypt.hashSync(password, 10);
   let email = req.body.email;
   let userObj = emailFinder(email, users);
  
@@ -170,7 +175,7 @@ app.post("/urls/login", (req, res) => {
     return;
   }
 
-  if (userObj.password === password) {
+  if (bcrypt.compareSync(req.body.password, hashedPassword)) {
     res.cookie('user_id', userObj.id);
     res.redirect('/urls');
     return;
@@ -184,6 +189,7 @@ app.post("/urls/login", (req, res) => {
 
 //Edit URLS button return
 app.post("/urls/:shortURL/edit", (req, res) => {
+
   urlDatabase[req.params.shortURL].longURL = req.body.longURL;
   res.redirect(`/urls`);
 
