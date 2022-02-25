@@ -3,13 +3,11 @@ const { urlsForUser, emailFinder, checkEmpty, generateRandomString } = require('
 const express = require("express");
 const PORT = 8080; // default port 8080
 const bodyParser = require("body-parser");
-const cookieParser = require('cookie-parser');
 const bcrypt = require('bcryptjs');
 const morgan = require('morgan');
 const cookieSession = require('cookie-session');
 const app = express();
 app.use(morgan('tiny'));
-app.use(cookieParser());
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(cookieSession({
   name: 'session',
@@ -34,7 +32,7 @@ app.get("/", (req, res) => {
 //Index Page
 app.get("/urls", (req, res) => {
 
-  let userURl = urlsForUser(req.session.user_id, urlDatabase);
+  const userURl = urlsForUser(req.session.user_id, urlDatabase);
   const templateVars = { urls: userURl, user: users[req.session.user_id]};
   res.render("urls_index", templateVars);// rendering urls with ejs from urls_index and passing in tempVars as arg
 
@@ -71,7 +69,8 @@ app.get("/urls/new", (req, res) => {
 app.get("/urls/:shortURL", (req, res) => {
 
   if (!req.session.user_id) {
-    res.redirect('/urls');
+    res.status(400).send("Please <a href='/login'>Log In!</a> to continue.");
+    return;
   }
 
   const shortURL = req.params.shortURL;
@@ -83,13 +82,12 @@ app.get("/urls/:shortURL", (req, res) => {
     return;
   }
 
-  const templateVars = { shortURL: req.params.shortURL,
+  const templateVars = { shortURL: shortURL,
     longURL: urlDatabase[req.params.shortURL].longURL,
     user: users[req.session.user_id]  }; // making sure to set longURL as a value to key of shortURL
   res.render("urls_show", templateVars);
   // showing HTML from urls_show with populated longURL from the form
     
-
 });
 
 //Hyperlink to re-direct client to original longURL landing-page
@@ -97,19 +95,18 @@ app.get("/u/:shortURL", (req, res) => {
 
   if (!urlDatabase[req.params.shortURL]) {
 
-    res.status(401).send("The URL does not exist.");
+    res.status(404).send("The URL does not exist.");
     return;
   
   }
   
-
   const longURL = urlDatabase[req.params.shortURL].longURL;
   res.redirect(longURL);
 });
 
 //Get info from edit button on urls/
 app.get("/urls/:shortURL/edit", (req, res) => {
-  let shortURL = req.params.shortURL;
+  const shortURL = req.params.shortURL;
   res.redirect(`/urls/${shortURL}`);
 });
 
@@ -126,9 +123,9 @@ app.post("/urls", (req, res) => {
     return;
   }
 
-  let shortURL = generateRandomString();
-  let userID = req.session.user_id;
-  let longURL = req.body.longURL;
+  const shortURL = generateRandomString();
+  const userID = req.session.user_id;
+  const longURL = req.body.longURL;
   urlDatabase[shortURL] = { longURL, userID };
 
   res.redirect(`/urls/${shortURL}`);
@@ -141,7 +138,7 @@ app.post("/urls/:shortURL/delete", (req, res) => {
     res.redirect('/urls');
     return;
   }
-  let shortURL = req.params.shortURL;
+  const shortURL = req.params.shortURL;
   delete urlDatabase[shortURL];
   res.redirect('/urls');
 
@@ -158,7 +155,7 @@ app.post("/register", (req, res) => {
   
   if (emailFinder(req.body.email, users)) {
     res.status(400)
-      .send('Email has already been Registered');
+      .send('Email has already been Registered! Try <a href="/login">Logging In.</a>');
     return;
     
   }
@@ -168,11 +165,11 @@ app.post("/register", (req, res) => {
       .send('Please enter a valid Email and Password');
     return;
   }
-
-  let newUserId = generateRandomString();
-  let id = newUserId;
-  let email = req.body.email;
-  let password = req.body.password;
+  console.log(users);
+  const newUserId = generateRandomString();
+  const id = newUserId;
+  const email = req.body.email;
+  const password = req.body.password;
   const hashedPassword = bcrypt.hashSync(password, 10);
   users[newUserId] = { id, email, hashedPassword};
   
@@ -185,9 +182,9 @@ app.post("/register", (req, res) => {
 //Login page
 app.post("/login", (req, res) => {
 
-  let password = req.body.password;
-  let email = req.body.email;
-  let userObj = emailFinder(email, users);
+  const password = req.body.password;
+  const email = req.body.email;
+  const userObj = emailFinder(email, users);
  
   if (userObj === false) {
     res.status(403)
