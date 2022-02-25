@@ -21,7 +21,8 @@ app.set("view engine", "ejs");
 const urlDatabase = {};
 const users = {};
 
-//Home page 
+
+//Home page
 app.get("/", (req, res) => {
   if (!req.session.user_id) {
     return res.redirect("/login");
@@ -40,14 +41,14 @@ app.get("/urls", (req, res) => {
 });
 
 //Registration page
-app.get("/urls/register", (req, res) => {
+app.get("/register", (req, res) => {
   const templateVars = {  user: users[req.session.user_id] };
   
   res.render(`urls_register`, templateVars);
 });
 
 //Login
-app.get("/urls/login", (req, res) => {
+app.get("/login", (req, res) => {
 
   const templateVars = {  user: users[req.session.user_id] };
   
@@ -57,8 +58,7 @@ app.get("/urls/login", (req, res) => {
 //Create new shortURL page
 app.get("/urls/new", (req, res) => {
   if (!users[req.session.user_id]) {
-    res.status(400)
-      .send('Please Log In!');
+    res.redirect('/login');
     return;
   }
 
@@ -79,7 +79,7 @@ app.get("/urls/:shortURL", (req, res) => {
 
   // if the short URL for the user (taken from :id) does not exist send error
   if (!filteredURLs[shortURL]) {
-    res.status(401).send("The URL does not exist.");
+    res.status(401).send("You do not have permission for this url.");
     return;
   }
 
@@ -94,6 +94,15 @@ app.get("/urls/:shortURL", (req, res) => {
 
 //Hyperlink to re-direct client to original longURL landing-page
 app.get("/u/:shortURL", (req, res) => {
+
+  if (!urlDatabase[req.params.shortURL]) {
+
+    res.status(401).send("The URL does not exist.");
+    return;
+  
+  }
+  
+
   const longURL = urlDatabase[req.params.shortURL].longURL;
   res.redirect(longURL);
 });
@@ -145,7 +154,7 @@ app.post("/logout", (req, res) => {
 });
 
 //Register page
-app.post("/urls/register", (req, res) => {
+app.post("/register", (req, res) => {
   
   if (emailFinder(req.body.email, users)) {
     res.status(400)
@@ -153,30 +162,30 @@ app.post("/urls/register", (req, res) => {
     return;
     
   }
-    
+  ///mentor notes to check before setting any user propreties
+  if (checkEmpty(req.body.password, req.body.email)) {
+    res.status(400)
+      .send('Please enter a valid Email and Password');
+    return;
+  }
+
   let newUserId = generateRandomString();
   let id = newUserId;
   let email = req.body.email;
   let password = req.body.password;
   const hashedPassword = bcrypt.hashSync(password, 10);
   users[newUserId] = { id, email, hashedPassword};
- 
-  if (checkEmpty(password, email)) {
-    res.status(400)
-      .send('Please enter a valid Email and Password');
-    return;
-  }
-    
+  
+  
   req.session.user_id = users[newUserId].id;
   res.redirect('/urls');
   
 });
 
 //Login page
-app.post("/urls/login", (req, res) => {
+app.post("/login", (req, res) => {
 
   let password = req.body.password;
- 
   let email = req.body.email;
   let userObj = emailFinder(email, users);
  
@@ -217,9 +226,3 @@ app.post("/urls/:shortURL/edit", (req, res) => {
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
 });
-
-
-
-
-
-
