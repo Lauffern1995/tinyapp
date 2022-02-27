@@ -52,12 +52,12 @@ app.get('/register', (req, res) => {
 
 //Login
 app.get('/login', (req, res) => {
-  console.log('check if im logged in', req.session.user_id);
+
   if (req.session.user_id) {
     res.redirect('/urls');
     return;
   }
-  console.log('im logged in');
+
   const templateVars = {  user: users[req.session.user_id] };
   
   res.render(`urls_login`, templateVars);
